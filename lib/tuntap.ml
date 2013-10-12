@@ -1,4 +1,33 @@
+
 type kind = Tap | Tun
+let string_of_kind = function Tap -> "tap" | Tun -> "tun"
+
+(* Keep this in sync with the definition of [get_tun_backend_type] in
+   the C stubs. *)
+type backend = Linux | Darwin | FreeBSD | NetBSD | OpenBSD | Unknown
+let string_of_backend = function
+   | Linux -> "Linux" | Darwin -> "Darwin" | FreeBSD -> "FreeBSD"
+   | NetBSD -> "NetBSD" | OpenBSD -> "OpenBSD" | Unknown -> "Unknown"
+
+external get_tun_backend_type : unit -> backend = "tun_get_backend_type"
+
+exception Not_supported of string
+
+let debug =
+  try
+    ignore(Unix.getenv "TUNTAP_DEBUG");
+    Printf.ksprintf (fun s -> Printf.eprintf "[tuntap] %s\n%!" s)
+  with Not_found ->
+    Printf.ksprintf (fun s -> ())
+
+let open_fd ?(kind=Tun) ?(num=0) () =
+  let backend = get_tun_backend_type () in
+  debug "Backend is %s" (string_of_backend backend);
+  match backend with
+  | Linux -> Unix.(openfile "/dev/net/tun" [O_RDWR] 0)
+  | Darwin | FreeBSD | NetBSD | OpenBSD -> 
+     Unix.(openfile (Printf.sprintf "/dev/%s%d" (string_of_kind kind) num) [O_RDWR] 0)
+  | Unknown -> failwith (Not_supported "unknown OS, so not sure how to open a tuntap")
 
 external opentun_stub : string -> kind -> bool -> bool
   -> int -> int -> Unix.file_descr * string = "tun_opendev_byte" "tun_opendev"

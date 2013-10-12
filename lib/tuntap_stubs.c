@@ -39,6 +39,28 @@
 #include <caml/fail.h>
 #include <caml/bigarray.h>
 
+/* Return the flavor of tuntap device that we're running on, which
+ * affects decisions on whether (e.g.) persistent tun operations are
+ * supported or not. */
+CAMLprim value
+tun_get_backend_type(value v_unit)
+{
+  CAMLparam1(v_unit);
+#if defined(__linux)
+  CAMLreturn(Val_int(0));
+#elif defined(__APPLE__) || defined(__MACH__)
+  CAMLreturn(Val_int(1));
+#elif defined(__FreeBSD__)
+  CAMLreturn(Val_int(2));
+#elif defined(__NetBSD__)
+  CAMLreturn(Val_int(3));
+#elif defined(__OpenBSD__)
+  CAMLreturn(Val_int(4));
+#else
+  CAMLreturn(Val_int(5));
+#endif
+}
+
 #if defined(__linux__)
 #include <linux/if_tun.h>
 
