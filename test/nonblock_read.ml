@@ -8,12 +8,14 @@ let test devname =
     if String.sub devname 0 3 = "tun"
     then Tuntap.opentun ~devname ()
     else Tuntap.opentap ~devname () in
-  printf "ok hwaddr: %s\n%!" (Tuntap.string_of_hwaddr (Tuntap.get_hwaddr devname));
+  printf "ok hwaddr: %s\n%!" (Macaddr.to_string (Tuntap.get_macaddr devname));
+(*
   let ipv4 = "172.168.1.1" in
   let netmask = "255.255.255.0" in
   printf "%s <- %s/%s: " devname ipv4 netmask;
   Tuntap.set_ipv4 ~devname ~ipv4 ~netmask ();
   Tuntap.set_up_and_running devname;
+*)
   printf "ok\n%!";
   let lfd = of_unix_file_descr fd ~blocking:false in
   let rec loop () =
@@ -28,4 +30,4 @@ let test devname =
 
 let () = if Array.length Sys.argv < 2
   then Printf.eprintf "Usage: %s <ifname>\n" Sys.argv.(0)
-  else run (sleep 0.1 >>= fun () -> test Sys.argv.(1))
+  else Lwt_unix.run (sleep 0.1 >>= fun () -> test Sys.argv.(1))
